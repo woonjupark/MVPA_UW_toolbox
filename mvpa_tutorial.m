@@ -55,19 +55,31 @@ end
 %% training time
 
 model(1).desc = {'DiscrimType', 'linear', 'OptimizeHyperparameters', 'none'};
-model(1).class_factor = 2; % which factor are you trying to classify
-model(1).add_pred ={}; % {1, 'session', 'run'}; % factors, and other info to include as additional predictors
-%       example models:
-% 'DiscrimType: 'linear', 'quadratic', cubic
-% 'OptimizeHyperparameters:,'none', 'auto};
-%       if you want to do SVM this would be the terminology
-% model(2).desc = {'SVM, OptimizeHyperparameters, none'};
+    %  Example models, increasing in power:
+    % 'DiscrimType: 'linear', 'quadratic', cubic
+    % If you want to go crazy and do SVM the terminology changes a little
+    % model(2).desc = {'SVM, OptimizeHyperparameters, 'none'};
+
+    % 'OptimizeHyperparameters', 'auto' is slow, basically does something
+    % like PCA before classification
+
+model(1).class_factor = 2; % which factor are you trying to classify?
+
+model(1).add_pred = {1, 'session', 'run'};
+    % this adds additional predictors to the BOLD data. For example a non-classification factor, can also specify session and run as additional predictors
+    % model(1).add_pred ={}; , but you don't have to
 
 model(1).CVstyle = {'Kfold', 10};
-% other examples cross validation styles:
-% {{'Kfold',  5}, {'Holdout', .1}, {'Leaveout', 'on'},
-% if you want to generalize over specific conditions
-% model(1).CVstyle= {'Generalize', 1, 'Seq', 'Onset'}; % define which factor are you Generalizing over, then the labels for train and sets
+    % Specifies cross validation style.
+    % Examples of sensible cross validation styles:
+    % {{'Kfold',  5}, {'Holdout', .1}, {'Leaveout', 'on'},
+
+    % if you want to Generalize over specific factors (e.g. use one
+    % factor to select a training set, and the other to select a test set
+    % the terminology is a little different:
+    % model(1).CVstyle= {'Generalize', 1, 'Seq', 'Onset'}; 
+    % define which factor you are using to select your train/tests sets
+    % using. Then specify the labels for train and test
 
 color_list = {'r', 'b', 'g' };
 for r = 1:length(roi)
