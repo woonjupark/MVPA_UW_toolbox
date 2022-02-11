@@ -3,12 +3,12 @@ clear all; close all;
 % data: anatomical, functonal (task)
 % roi: mt and pt
 % experimental protocols (knowledge) which trial when
-
+addpath(genpath('C:\Users\Ione Fine\Documents\code\neuroelf-matlab'))
 %% directories
 
 subject = 'sub-NS_G_RQ_1982';
 
-paths.main = fullfile('~', 'Dropbox', '[WP]', '[Projects]', 'EB-MT', 'Data-MTPilotTask');
+paths.main = {'X:\WoonJuPark\MT\MTPilotTask'};
 paths.roi = fullfile(paths.main, subject, 'ses-01', 'derivatives');
 paths.beta = fullfile(paths.main, subject, {'ses-02', 'ses-03'}, 'derivatives');
 paths.exp = fullfile(paths.main, subject);
@@ -77,8 +77,8 @@ for whichroi = 1:length(rois)
 
             % load experimental protocols 
             expPattern = sprintf('*_ses-%s_*_run-%s_*.mat', scanInfo.ses, scanInfo.run);
-            expFile = dir(fullfile(paths.exp, expPattern));
-            load(fullfile(paths.exp, expFile(1).name), 'emat'); 
+            expFile = dir(fullfile(paths.exp{1}, expPattern));
+            load(fullfile(paths.exp{1}, expFile(1).name), 'emat'); 
 
             % roi
             roiIndx = strcmp({betaWeights.name}, roiname);
