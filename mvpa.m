@@ -25,7 +25,6 @@ classdef mvpa
             % load experimental protocols
             load(fullfile(file.folder, file.name), 'emat');
         end
-        
         % collate functions
         function [roi, sess_run] = collate_roi_predictors(roi, data_roi, dataformat, s, i)
             % collate voxel values across sessions and runs
@@ -40,6 +39,7 @@ classdef mvpa
         end
         function factor = collate_factor_labels(factor, emat, session, run)
             % collate factors across sessions and runs
+
             for f = 1:(length(factor)-3)
                 factor(f).classlabels = cat(1, factor(f).classlabels, factor(f).labels(emat(:,factor(f).col))');
             end
@@ -56,6 +56,7 @@ classdef mvpa
             factor(end-1).classlabels = cat(1, factor(end-1).classlabels, session.*ones(size(emat,1), 1));
             factor(end).classlabels = cat(1, factor(end).classlabels, run.*ones(size(emat,1), 1));
         end
+
         % subsetting
         function data_roi = subset_data_rois(data_xff, roi_xff, dataformat)
             % subset data with the rois
@@ -65,6 +66,7 @@ classdef mvpa
                 data_roi = mvpa.GLMinVOI(data_xff, roi_xff);% get the beta weights by roi
             end
         end
+        
         function [predictors] = generate_predictors(model, factor, roi)
             % so decide what besides the voxel values will be predictors
             predictors = num2cell(roi.predictors);
@@ -292,7 +294,20 @@ classdef mvpa
                 b(i).beta = glmData(b(i).id,:);
             end
         end
-        % classify
+
+        function [predictors] = generate_predictors(model, factor, roi)
+            predictors = num2cell(roi.predictors);
+            for p = 1:length(model.add_pred)
+                if isa(model.add_pred{p}, 'double')
+                    predictors = cat(2, predictors, factor(model.add_pred{p}).classlabels);
+                elseif strcmp(model.add_pred{p}, 'session')
+                    predictors = cat(2, predictors, num2cell(factor(end-1).classlabels));
+                elseif strcmp(model.add_pred{p}, 'run')
+                    predictors = cat(2, predictors, num2cell(factor(end).classlabels));
+                end
+            end
+        end
+
         function [perf, Mdl, Mdl_CV] = classify(model,predictors,classlabels, genlabels)
             if ~sum(strcmp(model.CVstyle, 'Generalize'))
                 train_idx = 1:length(classlabels);
@@ -301,7 +316,6 @@ classdef mvpa
                 train_idx = strcmp(genlabels, model.CVstyle{3});
                 test_idx = strcmp(genlabels, model.CVstyle{4});
             end
-
             if strcmp(model.desc{1}, 'DiscrimType')
                 Mdl = fitcdiscr(predictors(train_idx, :), classlabels(train_idx), model.desc{:});
             elseif strcmp(modeldesc{1},'SVM')

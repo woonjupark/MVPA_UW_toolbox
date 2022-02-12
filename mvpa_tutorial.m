@@ -43,6 +43,7 @@ for sess = 1:length(paths.session) % for each session
             ' does not match the number of experimental files', num2str(length(data_filelist))]);
     end
     for run = 1:length(data_filelist) % for each vmp/glm file
+
         % deal with factors
         conds = mvpa.load_exp(cond_filelist(run)); % load exp protocols
         factor = mvpa.collate_factor_labels(factor, conds, sess, run);        % save the class labels
@@ -54,7 +55,6 @@ for sess = 1:length(paths.session) % for each session
 end
 
 %% training time
-
 model(1).desc = {'DiscrimType', 'linear', 'OptimizeHyperparameters', 'none'};
     %  Example models, increasing in power:
     % 'DiscrimType: 'linear', 'quadratic', cubic
@@ -81,11 +81,13 @@ model(1).color = 'r'; model(1).sym = 's';
     % model(1).CVstyle= {'Generalize', 1, 'Seq', 'Onset'}; 
     % define which factor you are using to select your train/tests sets
     % using. Then specify the labels for train and test
+
     model(1).Exclude = {1, 'Random'}; % list of conditions to exclude, only works for non generalize right now
 
 for r = 1:length(roi)
     for m = 1:length(model)
         predictors = mvpa.generate_predictors(model(m), factor, roi(r));
+
         predictors = mvpa.exclude_factors(predictors, model(m), factor);
         if strcmp(model(m).CVstyle, 'Generalize')
             [perf, Mdl, Mdl_CV] = mvpa.classify(model(m),  roi(r).predictors, ...
