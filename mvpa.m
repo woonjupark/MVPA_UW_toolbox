@@ -46,7 +46,8 @@ classdef mvpa
             for f = 1:(length(factor)-3)
                 factor(f).classlabels = cat(1, factor(f).classlabels, factor(f).labels(emat(:,factor(f).col))');
             end
-
+            % collates the factor that is a combination of all other
+            % factors
             for c = 1:size(emat,1)
                 tmp = factor(1).classlabels{c};
                 for f = 1:(length(factor)-3)
@@ -54,6 +55,7 @@ classdef mvpa
                 end
             end
             factor(end-2).classlabels = cat(2, factor(end-2).classlabels, str);
+            % make session and run factors
             factor(end-1).classlabels = cat(1, factor(end-1).classlabels, session.*ones(size(emat,1), 1));
             factor(end).classlabels = cat(1, factor(end).classlabels, run.*ones(size(emat,1), 1));
         end
