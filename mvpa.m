@@ -295,18 +295,6 @@ classdef mvpa
             end
         end
 
-        function [predictors] = generate_predictors(model, factor, roi)
-            predictors = num2cell(roi.predictors);
-            for p = 1:length(model.add_pred)
-                if isa(model.add_pred{p}, 'double')
-                    predictors = cat(2, predictors, factor(model.add_pred{p}).classlabels);
-                elseif strcmp(model.add_pred{p}, 'session')
-                    predictors = cat(2, predictors, num2cell(factor(end-1).classlabels));
-                elseif strcmp(model.add_pred{p}, 'run')
-                    predictors = cat(2, predictors, num2cell(factor(end).classlabels));
-                end
-            end
-        end
 
         function [perf, Mdl, Mdl_CV] = classify(model,predictors,classlabels, genlabels)
             if ~sum(strcmp(model.CVstyle, 'Generalize'))
