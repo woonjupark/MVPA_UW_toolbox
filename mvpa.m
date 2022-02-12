@@ -8,11 +8,15 @@
 
 classdef mvpa
     methods(Static)
+        % load functions
         function roi = load_roi(location)
+            % loads in the voi file containing all the roi files, saves in
+            % xff format
             voiFile = fullfile(location);
             roi = xff(voiFile); % loads in the roi file
         end
         function data_xff  = load_data(file)
+           % loads BOLD data, saves in xff format, can be vmp or glm
             disp(['loading ', file.name]);
             clear data_xff;
             data_xff = xff(fullfile(file.folder, file.name)); % loading data into MATLAB
@@ -21,15 +25,9 @@ classdef mvpa
             % load experimental protocols
             load(fullfile(file.folder, file.name), 'emat');
         end
-        function data_roi = subset_data_rois(data_xff, roi_xff, dataformat)
-            % subset data with the rois
-            if strcmp(dataformat, 'vmp')
-                data_roi = mvpa.VMPinVOI(data_xff, roi_xff); % get the beta weights
-            elseif strcmp(dataformat, 'glm')
-                data_roi = mvpa.GLMinVOI(data_xff, roi_xff);% get the beta weights by roi
-            end
-        end
+        % collate functions
         function [roi, sess_run] = collate_roi_predictors(roi, data_roi, dataformat, s, i)
+            % collate voxel values across sessions and runs
             for r = 1:length(roi)
                 roiIndx = strcmp({data_roi.name}, roi(r).name); % subset by the ROI
                 if strcmp(dataformat, 'vmp')
@@ -38,10 +36,9 @@ classdef mvpa
                     roi(r).predictors = [roi(r).predictors; data_roi(roiIndx).beta(:,1:end-1)']; % block x timept
                 end
             end
-
         end
-
-        function factor = save_class_label(factor, emat, session, run)
+        function factor = collate_factor_labels(factor, emat, session, run)
+            % collate factors across sessions and runs
 
             for f = 1:(length(factor)-3)
                 factor(f).classlabels = cat(1, factor(f).classlabels, factor(f).labels(emat(:,factor(f).col))');
@@ -60,6 +57,39 @@ classdef mvpa
             factor(end).classlabels = cat(1, factor(end).classlabels, run.*ones(size(emat,1), 1));
         end
 
+        % subsetting
+        function data_roi = subset_data_rois(data_xff, roi_xff, dataformat)
+            % subset data with the rois
+            if strcmp(dataformat, 'vmp')
+                data_roi = mvpa.VMPinVOI(data_xff, roi_xff); % get the beta weights
+            elseif strcmp(dataformat, 'glm')
+                data_roi = mvpa.GLMinVOI(data_xff, roi_xff);% get the beta weights by roi
+            end
+        end
+        
+        function [predictors] = generate_predictors(model, factor, roi)
+            % so decide what besides the voxel values will be predictors
+            predictors = num2cell(roi.predictors);
+            for p = 1:length(model.add_pred)
+                if isa(model.add_pred{p}, 'double')
+                    predictors = cat(2, predictors, factor(model.add_pred{p}).classlabels);
+                elseif strcmp(model.add_pred{p}, 'session')
+                    predictors = cat(2, predictors, num2cell(factor(end-1).classlabels));
+                elseif strcmp(model.add_pred{p}, 'run')
+                    predictors = cat(2, predictors, num2cell(factor(end).classlabels));
+                end
+            end
+        end
+        function predictors = exclude_factors(predictors, model, factor)
+            % any factors one wants to exclude?
+            idx = ones(size(predictors, 1), 1);
+            for p = 1:2:length(model.Exclude)
+               tmp = ~strcmp(model.Exclude{p, 2}, factor(model.Exclude{p, 1}).classlabels);
+               idx = idx.*tmp;
+            end
+            predictors = predictors(find(idx), :);
+        end
+            % from anatomies to voi 
         function [b] = VMPinVOI(vmp, voi, voiNum)
             % [b] = GLMinVOI(vmp, voi ,voiNum)
             %
@@ -264,6 +294,7 @@ classdef mvpa
                 b(i).beta = glmData(b(i).id,:);
             end
         end
+
         function [predictors] = generate_predictors(model, factor, roi)
             predictors = num2cell(roi.predictors);
             for p = 1:length(model.add_pred)
@@ -276,7 +307,6 @@ classdef mvpa
                 end
             end
         end
-
 
         function [perf, Mdl, Mdl_CV] = classify(model,predictors,classlabels, genlabels)
             if ~sum(strcmp(model.CVstyle, 'Generalize'))
