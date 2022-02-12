@@ -1,6 +1,6 @@
 clear all; close all;
 
-% Dependencies:
+%% Dependencies:
 % Neuroelf toolbox
 % https://github.com/neuroelf/neuroelf-matlab
 
@@ -13,14 +13,14 @@ paths.subject = {'sub-NS_G_RQ_1982'};
 %% load ROI (aka .voi files)
 roi(1).name = {'rPT'}; roi(2).name = {'lMT'}; roi(3).name = {'rMT'};
 paths.roi = {'rois'}; % where are the roi files located inside the subject directory
-for run = 1:length(roi); roi(run).predictors = []; end % initialize the predictor matrix for roi voxels
+for run = 1:length(roi); roi(run).predictors = []; end % initialize the roi struct to collate later 
 
 %% load beta weights or glm data
 paths.session = fullfile(paths.main, paths.subject, {'ses-02', 'ses-03'});
 
 %% define if using vmp or glm BOLD data
 % dataformat = 'vmp';
-paths.data = fullfile('derivatives', '*_GLM_trials.vmp');
+% paths.data = fullfile('derivatives', '*_GLM_trials.vmp');
 dataformat = 'glm';
 paths.data = fullfile('derivatives', '*_glm_trials.glm'); % where the data files are located inside the subject directory
 
@@ -30,10 +30,9 @@ factor(2).col = 3; factor(2).labels =  {'left', 'right'}; factor(2).chance = 1/2
 factor(3).col = NaN; factor(3).labels = {'combo'}; factor(3).chance = 1/6; % combines the other factors
 factor(4).col = NaN; factor(3).labels = {'session'}; factor(3).chance = NaN; % records session
 factor(5).col = NaN; factor(4).labels = {'run'}; factor(3).chance = NaN; % records run
+for f = 1:length(factor); factor(f).classlabels = [];  end % initialize the factors to collate later 
 
-for f = 1:length(factor); factor(f).classlabels = [];  end
-
-%% collect all the data
+%% collect all the rois
 roi_xff = mvpa.load_roi(fullfile(paths.main, paths.subject,paths.roi,{[paths.subject{1}, '_roi.voi']})); % load the rois
 
 for sess = 1:length(paths.session) % for each session
@@ -57,7 +56,7 @@ end
 model(1).desc = {'DiscrimType', 'linear', 'OptimizeHyperparameters', 'none'};
     %  Example models, increasing in power:
     % 'DiscrimType: 'linear', 'quadratic', cubic
-    % If you want to go crazy and do SVM the terminology changes a little
+    % If you want to go crazy and do SVM the terminology changes a little:
     % model(2).desc = {'SVM, OptimizeHyperparameters, 'none'};
 
     % 'OptimizeHyperparameters', 'auto' is slow, basically does something
@@ -69,7 +68,8 @@ model(1).add_pred = {1, 'session', 'run'};
     % this adds additional predictors to the BOLD data. For example a non-classification factor, can also specify session and run as additional predictors
     % model(1).add_pred ={}; , but you don't have to
 
-model(1).CVstyle = {'Kfold', 10};
+model(1).CVstyle = {'Kfold', 10}; 
+model(1).color = 'r'; model(1).sym = 's';
     % Specifies cross validation style.
     % Examples of sensible cross validation styles:
     % {{'Kfold',  5}, {'Holdout', .1}, {'Leaveout', 'on'},
@@ -81,7 +81,7 @@ model(1).CVstyle = {'Kfold', 10};
     % define which factor you are using to select your train/tests sets
     % using. Then specify the labels for train and test
 
-color_list = {'r', 'b', 'g' };
+
 for r = 1:length(roi)
     for m = 1:length(model)
         predictors = mvpa.generate_predictors(model(m), factor, roi(r));
@@ -92,8 +92,8 @@ for r = 1:length(roi)
             [perf, Mdl, Mdl_CV] = mvpa.classify(model(m),  roi(r).predictors, ...
                 factor(model(m).class_factor).classlabels);
         end
-        h(m) = errorbar(r, perf.mean, perf.std, 'o'); 
-        set(h(m), 'MarkerEdgeColor', color_list{m},'MarkerFaceColor', color_list{m}, 'Color', color_list{m}); hold on
+        h(m) = errorbar(r, perf.mean, perf.std, model(m).sym); 
+        set(h(m), 'MarkerEdgeColor', model(m).color,'MarkerFaceColor', model(m).color, 'Color', model(m).color); hold on
     end
 end
 set(gca, 'XLim', [0 4])
