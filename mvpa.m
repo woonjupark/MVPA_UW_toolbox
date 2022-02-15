@@ -97,7 +97,7 @@ classdef mvpa
             %   vmp             As given by vmp = BVQXfile(glmpaths)
             %   voi             As given by voi = BVQXfile(voipaths)
             %   voiNum          Index number (or range) of the voi(s) to be indexed
-            %                   (default: 1:length(voi.VOI))
+            %                   (default: 1:length(voi{1}.VOI))
             % Output:
             %   b              A structure containing vmp indices and data with fields:
             %       id         Linear indices of voi used for the vmp matrix
@@ -109,7 +109,7 @@ classdef mvpa
             %% Input Control
 
             if ~exist('voiNum', 'var')
-                voiNum = 1:length(voi.VOI);
+                voiNum = 1:length(voi{1}.VOI);
             end
 
             %% Start Extracting Beta Weights
@@ -126,7 +126,7 @@ classdef mvpa
 
             for i = voiNum
                 % voi coordinates in anatomical resolution
-                v = voi.BVCoords(i);
+                v = voi{1}.BVCoords(i);
 
                 % convert voi coordinates to vtc coordinates and resolution
                 v = round(bsxfun(@minus, v, vmpOffset)/vmp.Resolution) + 1;
@@ -142,7 +142,7 @@ classdef mvpa
                 v = unique(v); % keep only unique indices.
 
                 % name of the roi
-                b(i).name = voi.VOI(i).Name;
+                b(i).name = voi{1}.VOI(i).Name;
 
                 % save the linear indices
                 b(i).id = v;
@@ -163,7 +163,7 @@ classdef mvpa
             %   vtc             As given by vtc = BVQXfile(vtcpaths)
             %   voi             As given by voi = BVQXfile(voipaths)
             %   voiNum          Index number (or range) of the voi(s) to be indexed
-            %                   (default: 1:length(voi.VOI))
+            %                   (default: 1:length(voi{1}.VOI))
             %   normalize       Normalize vtc data: (vtc - mean(vtc)) / sd(vtc) (true)
             %                   OR not (false), logical (default: true)
             %
@@ -183,9 +183,9 @@ classdef mvpa
 
             %% Input Control
 
-            % if voiNum does not exist, default = 1:length(voi.VOI)
+            % if voiNum does not exist, default = 1:length(voi{1}.VOI)
             if ~exist('voiNum', 'var')
-                voiNum = 1:length(voi.VOI);
+                voiNum = 1:length(voi{1}.VOI);
             end
 
             % if normalize does not exist, default = true
@@ -208,7 +208,7 @@ classdef mvpa
 
             for i = voiNum
                 % voi coordinates in anatomical resolution
-                v = voi.BVCoords(i);
+                v = voi{1}.BVCoords(i);
 
                 % convert voi coordinates to vtc coordinates and resolution
                 v = round(bsxfun(@minus, v, vtcOffset)/vtc.Resolution) + 1;
@@ -223,7 +223,7 @@ classdef mvpa
                 v = sub2ind(vtcSize(2:end), v(:,1), v(:,2), v(:,3));
 
                 % name of the roi
-                roi(i).name = voi.VOI(i).Name;
+                roi(i).name = voi{1}.VOI(i).Name;
 
                 % only keep the unique indices
                 roi(i).id = unique(v)';
@@ -242,7 +242,7 @@ classdef mvpa
             %   glm             As given by glm = BVQXfile(glmPath)
             %   voi             As given by voi = BVQXfile(voiPath)
             %   voiNum          Index number (or range) of the voi(s) to be indexed
-            %                   (default: 1:length(voi.VOI))
+            %                   (default: 1:length(voi{1}.VOI))
             %
             % Output:
             %   b              A structure containing glm indices and data with fields:
@@ -255,7 +255,7 @@ classdef mvpa
             %% Input Control
 
             if ~exist('voiNum', 'var')
-                voiNum = 1:length(voi.VOI);
+                voiNum = 1:length(voi{1}.VOI);
             end
 
             %% Start Extracting Beta Weights
@@ -267,7 +267,7 @@ classdef mvpa
 
             for i = voiNum
                 % voi coordinates in anatomical resolution
-                v = voi.BVCoords(i);
+                v = voi{1}.BVCoords(i);
 
                 % convert voi coordinates to vtc coordinates and resolution
                 v = round(bsxfun(@minus, v, glmOffset)/glm.Resolution) + 1;
@@ -282,7 +282,7 @@ classdef mvpa
                 v = sub2ind(glmSize(1:3), v(:,1), v(:,2), v(:,3));
 
                 % name of the roi
-                b(i).name = voi.VOI(i).Name;
+                b(i).name = voi{1}.VOI(i).Name;
 
                 % only keep the unique indices
                 b(i).id = unique(v);
