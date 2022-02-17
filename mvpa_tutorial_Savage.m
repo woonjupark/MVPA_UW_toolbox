@@ -11,12 +11,15 @@ clear all; close all;
 % C:\Dropbox\__Projects\_MT_sound_and_motion\[ScanData]\MTPilotTask\sub-NS_G_RQ_1982
 
 %% directories
-paths.main = {'C:\Dropbox\__Projects\_MT_sound_and_motion\[ScanData]'};
-paths.subject = {'WJ-Pilot1'};
+% paths.main = {'C:\Dropbox\__Projects\_MT_sound_and_motion\[ScanData]'};  
+
+paths.main = {'X:\TristramSavage\MT_xMod_2021\wjPilot_freesurf2BV\derivatives\brainvoyager\'};  
+
+paths.subject = {'sub-Pilot1'};
 
 %% load ROI (aka .voi files)
 roi(1).name = {'MT_L_from3mm'}; 
-% roi(2).name = {'MT_R_from3mm'}; 
+roi(2).name = {'MT_R_from3mm'}; 
 
 paths.roi = {'rois'}; % where are the roi files located inside the subject directory
 for run = 1:length(roi); roi(run).predictors = []; end % initialize the roi struct to collate later 
@@ -26,11 +29,11 @@ paths.session = fullfile(paths.main, paths.subject, {'ses-01', 'ses-02'});
 
 %% define if using vmp or glm BOLD data
 % dataformat = 'vmp';
-% paths.data = fullfile('derivatives', '*_GLM_trials.vmp');
-dataformat = 'glm';
-% paths.data = fullfile('derivatives', '*2mm*.glm'); % where the data files are located inside the subject directory
+% paths.data = fullfile('derivatives', '*3mm*24preds01.vmp'); % where the data files are located inside the subject directory
 
-paths.data = fullfile('derivatives', '*3mm*.glm'); % where the data files are located inside the subject directory
+dataformat = 'glm';
+paths.data = fullfile('derivatives', '*3mm*24preds01.glm'); % where the data files are located inside the subject directory
+
 
 %% setup experimental condition lists
 % factor(1).col = 1;  factor(1).labels = {'Seq', 'Onset', 'Random'}; factor(1).chance = 1/3;
@@ -42,9 +45,9 @@ factor(4).col = NaN; factor(4).labels = {'run'}; factor(4).chance = NaN; % recor
 for f = 1:length(factor); factor(f).classlabels = [];  end % initialize the factors to collate later 
 
 %% collect all the rois
-% roi_xff = mvpa.load_roi(fullfile(paths.main, paths.subject,paths.roi, 'MT_L-and-R_from3mm_combo.voi')); % load the rois
+roi_xff = mvpa.load_roi(fullfile(paths.main, paths.subject,paths.roi, 'MT_L-and-R_from3mm_combo.voi')); % load the rois
 
-roi_xff = mvpa.load_roi(fullfile(paths.main, paths.subject, paths.roi, 'MT_L_from3mm.voi')); % load the rois
+% roi_xff = mvpa.load_roi(fullfile(paths.main, paths.subject, paths.roi, 'MT_L_from3mm.voi')); % load the rois
 
 % roi_xff = mvpa.load_roi(fullfile(paths.main, paths.subject, paths.roi, 'MT_R_from3mm.voi')); % load the rois
 
@@ -56,6 +59,9 @@ for sess = 1:length(paths.session) % for each session
         error(['number of condition files ', num2str(length(condfilelist)), ...
             ' does not match the number of experimental files', num2str(length(data_filelist))]);
     end
+
+     
+
     for run = 1:length(data_filelist) % for each vmp/glm file
 
         % deal with factors
