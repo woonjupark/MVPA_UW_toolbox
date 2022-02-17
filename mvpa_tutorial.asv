@@ -8,11 +8,8 @@ addpath(genpath('C:\Users\Ione Fine\Documents\code\neuroelf-matlab'))
 
 %% directories
 
-% C:\Dropbox\__Projects\_MT_sound_and_motion\[ScanData]\WJ-Pilot1\ses-01'
-
-% paths.main = {'C:\Dropbox\__Projects\_MT_sound_and_motion\[ScanData]\WJ-Pilot1'};
-paths.main = {'C:\Dropbox\__Projects\_MT_sound_and_motion\[ScanData]\MTPilotTask'};
-
+C:\Dropbox\__Projects\_MT_sound_and_motion\[ScanData]\WJ-Pilot1\ses-01
+paths.main = {'C:\Dropbox\__Projects\_MT_sound_and_motion\[ScanData]\WJ-Pilot1'};
 paths.subject = {'sub-NS_G_RQ_1982'};
 
 %% load ROI (aka .voi files)
