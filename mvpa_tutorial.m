@@ -22,9 +22,12 @@ paths.session = fullfile(paths.main, paths.subject, {'ses-02', 'ses-03'});
 % dataformat = 'vmp';
 % paths.data = fullfile('derivatives', '*_GLM_trials.vmp');
 dataformat = 'glm';
-paths.data = fullfile('derivatives', '*_glm_trials.glm'); % where the data files are located inside the subject directory
+paths.data = fullfile('derivatives', '*ver2*.glm'); % where the data files are located inside the subject directory
 
 %% setup experimental condition lists
+% so we use the term 'conditions' to refer to anything that's saved as part
+% of the experiment in a separate file. Factors to things we are going to
+% load in and use as regressors in the experimewhosnt
 factor(1).col = 2;  factor(1).labels = {'Seq', 'Onset', 'Random'}; factor(1).chance = 1/3;
 factor(2).col = 3; factor(2).labels =  {'left', 'right'}; factor(2).chance = 1/2;
 factor(3).col = NaN; factor(3).labels = {'combo'}; factor(3).chance = 1/6; % combines the other factors
@@ -39,17 +42,23 @@ for sess = 1:length(paths.session) % for each session
     cond_filelist = dir(fullfile(paths.session{sess}, '*task*.mat')); % each experimental condition file
     data_filelist = dir(fullfile(paths.session{sess}, paths.data)); % each data file
     if length(cond_filelist)~=length(data_filelist)
-        error(['number of condition files ', num2str(length(condfilelist)), ...
+        error(['number of condition files ', num2str(length(cond_filelist)), ...
             ' does not match the number of experimental files', num2str(length(data_filelist))]);
     end
     for run = 1:length(data_filelist) % for each vmp/glm file
 
         % deal with factors
-        conds = mvpa.load_exp(cond_filelist(run)); % load exp protocols
-        factor = mvpa.collate_factor_labels(factor, conds, sess, run);        % save the class labels
+        conditions = mvpa.load_exp(cond_filelist(run)); % load exp protocols, nevents x nconditions
+        factor = mvpa.collate_factor_labels(factor, cell2mat(conditions.mat), sess, run);        % save the class labels [nevents x run]
         % deal with data
-        data_xff = mvpa.load_data(data_filelist(run)); % load in vmp or glm
-        data_roi = mvpa.subset_data_rois(data_xff, roi_xff, dataformat); % just save the data for ROIs, in a temp structure
+        data_xff = mvpa.load_data(data_filelist(run)); % load in vmp or glm.
+        % for glm, map of all voxels in brain, last dim is nvoxels
+        data_roi = mvpa.subset_data_rois(data_xff, roi_xff, dataformat);
+        % just save the data for ROIs, in a structure nevents x nvoxels
+        if length(data_roi(1).id)~=size(conditions.mat, 1)
+            error(['the number of events in the glm files ', num2str(length(data_roi(1).id)), ...
+                ' does not match the number of events specified in the experimental files', num2str(size(conditions.mat, 1))]);
+        end
         roi = mvpa.collate_roi_predictors(roi, data_roi, dataformat); % now collate the roi data, over all the runs
     end
 end
