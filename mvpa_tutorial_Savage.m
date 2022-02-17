@@ -6,16 +6,16 @@ clear all; close all;
 
 % addpath(genpath('C:\Program Files\MATLAB\R2021b\toolbox\NeuroElf_v10_5153'))
 
-% addpath(genpath('C:\Users\Ione Fine\Documents\code\neuroelf-matlab'))
+addpath(genpath('C:\Users\Ione Fine\Documents\code\neuroelf-matlab'))
 
 % C:\Dropbox\__Projects\_MT_sound_and_motion\[ScanData]\MTPilotTask\sub-NS_G_RQ_1982
 
 %% directories
-paths.main = {'C:\Dropbox\__Projects\_MT_sound_and_motion\[ScanData]'};
-paths.subject = {'WJ-Pilot1'};
+paths.main = {'X:\TristramSavage/MT_xMod_2021/'};
+paths.subject = {'wjPilot_IF'};
 
 %% load ROI (aka .voi files)
-roi(1).name = {'MT_L_from3mm'}; 
+roi(1).name = {'MT_R_from3mm'};  % same of the ROIs inside the stored voi file
 % roi(2).name = {'MT_R_from3mm'}; 
 
 paths.roi = {'rois'}; % where are the roi files located inside the subject directory
@@ -44,7 +44,7 @@ for f = 1:length(factor); factor(f).classlabels = [];  end % initialize the fact
 %% collect all the rois
 % roi_xff = mvpa.load_roi(fullfile(paths.main, paths.subject,paths.roi, 'MT_L-and-R_from3mm_combo.voi')); % load the rois
 
-roi_xff = mvpa.load_roi(fullfile(paths.main, paths.subject, paths.roi, 'MT_L_from3mm.voi')); % load the rois
+roi_xff = mvpa.load_roi(fullfile(paths.main, paths.subject, paths.roi, 'MT_R_from3mm_newSave.voi')); % load the rois
 
 % roi_xff = mvpa.load_roi(fullfile(paths.main, paths.subject, paths.roi, 'MT_R_from3mm.voi')); % load the rois
 
@@ -64,7 +64,7 @@ for sess = 1:length(paths.session) % for each session
         factor = mvpa.collate_factor_labels(factor, conds, sess, run);        % save the class labels
         % deal with data
         data_xff = mvpa.load_data(data_filelist(run)); % load in vmp or glm
-        data_roi = mvpa.subset_data_rois(data_xff, roi_xff, dataformat); % just save the data for ROIs, in a temp structure
+        data_roi = mvpa.subset_data_rois(data_xff, roi_xff, dataformat); % just save the data for ROIs, in a temp structure, nvoxels x n events/blocks
         roi = mvpa.collate_roi_predictors(roi, data_roi, dataformat); % now collate the roi data, over all the runs
     end
 end

@@ -67,6 +67,7 @@ classdef mvpa
             elseif strcmp(dataformat, 'glm')
                 data_roi = mvpa.GLMinVOI(data_xff, roi_xff);% get the beta weights by roi
             end
+            if d
         end
         
         function [predictors] = generate_predictors(model, factor, roi)
