@@ -25,7 +25,7 @@ classdef mvpa
         function conditions = load_exp(file)
             % load experimental protocols
             load(fullfile(file.folder, file.name), 'conditions');
-            disp('YOU HAVE ', num2str(size(conditions.mat, 1)), 'EVENTS IN A RUN, CORRECT?');
+            disp(['YOU HAVE ', num2str(size(conditions.mat, 1)), ' EVENTS IN A RUN, CORRECT?']);
         end
         % collate functions
         function [roi, sess_run] = collate_roi_predictors(roi, data_roi, dataformat, s, i)
@@ -39,24 +39,31 @@ classdef mvpa
                 end
             end
         end
-        function factor = collate_factor_labels(factor, emat, session, run)
+        function factor = collate_factor_labels(factor, conds, session, run)
             % collate factors across sessions and runs
-
-            for f = 1:(length(factor)-3)
-                factor(f).classlabels = cat(1, factor(f).classlabels, factor(f).labels(emat(:,factor(f).col))');
+            
+            if length(factor)>3 % if we have more than one factor, there's a combination factor
+                nf = 3; 
+            else % if only one explicitly defined factor, we just have 3 factors, the factor, session and run
+                nf = 2;
             end
-            % collates the factor that is a combination of all other
-            % factors
-            for c = 1:size(emat,1)
-                tmp = factor(1).classlabels{c};
-                for f = 1:(length(factor)-3)
-                    str{c} = strcat(tmp, factor(f).classlabels{c});
+            for f = 1:(length(factor)-nf)
+                factor(f).classlabels = cat(1, factor(f).classlabels, factor(f).labels(conds(:,factor(f).col))');
+            end
+            if length(factor)>3 
+                % collates the factor that is a combination of all other
+                % factors
+                for c = 1:size(conds,1)
+                    tmp = factor(1).classlabels{c};
+                    for f = 1:(length(factor)-3)
+                        str{c} = strcat(tmp, factor(f).classlabels{c});
+                    end
                 end
+                factor(end-2).classlabels = cat(2, factor(end-2).classlabels, str);
             end
-            factor(end-2).classlabels = cat(2, factor(end-2).classlabels, str);
             % make session and run factors
-            factor(end-1).classlabels = cat(1, factor(end-1).classlabels, session.*ones(size(emat,1), 1));
-            factor(end).classlabels = cat(1, factor(end).classlabels, run.*ones(size(emat,1), 1));
+            factor(end-1).classlabels = cat(1, factor(end-1).classlabels, session.*ones(size(conds,1), 1));
+            factor(end).classlabels = cat(1, factor(end).classlabels, run.*ones(size(conds,1), 1));
         end
 
         % subsetting

@@ -4,70 +4,78 @@ clear all; close all;
 % Neuroelf toolbox
 % https://github.com/neuroelf/neuroelf-matlab
 
-addpath(genpath('C:\Users\Ione Fine\Documents\code\neuroelf-matlab'))
+ione = 1;
+if ione
+    addpath(genpath('C:\Users\Ione Fine\Documents\code\neuroelf-matlab'))
+end
+
 
 %% directories
+% paths.main = {'C:\Dropbox\__Projects\_MT_sound_and_motion\[ScanData]'};
 
-% C:\Dropbox\__Projects\_MT_sound_and_motion\[ScanData]\WJ-Pilot1\ses-01'
+paths.main = {'X:\TristramSavage\MT_xMod_2021\wjPilot_freesurf2BV\derivatives\brainvoyager\'};
 
-% paths.main = {'C:\Dropbox\__Projects\_MT_sound_and_motion\[ScanData]\WJ-Pilot1'};
-paths.main = {'C:\Dropbox\__Projects\_MT_sound_and_motion\[ScanData]\MTPilotTask'};
-
-paths.subject = {'sub-NS_G_RQ_1982'};
+paths.subject = {'sub-Pilot1'};
 
 %% load ROI (aka .voi files)
-roi(1).name = {'rPT'}; roi(2).name = {'lMT'}; roi(3).name = {'rMT'};
+roi(1).name = {'MT_L_from3mm'};
+roi(2).name = {'MT_R_from3mm'};
+
 paths.roi = {'rois'}; % where are the roi files located inside the subject directory
 for run = 1:length(roi); roi(run).predictors = []; end % initialize the roi struct to collate later
 
 %% load beta weights or glm data
-paths.session = fullfile(paths.main, paths.subject, {'ses-02', 'ses-03'});
+paths.session = fullfile(paths.main, paths.subject, {'ses-01', 'ses-02'});
 
 %% define if using vmp or glm BOLD data
 % dataformat = 'vmp';
-% paths.data = fullfile('derivatives', '*_GLM_trials.vmp');
+% paths.data = fullfile('derivatives', '*3mm*24preds01.vmp'); % where the data files are located inside the subject directory
+
 dataformat = 'glm';
-paths.data = fullfile('derivatives', '*ver2*.glm'); % where the data files are located inside the subject directory
+paths.data = fullfile('derivatives', '*3mm*24preds01.glm'); % where the data files are located inside the subject directory
+
 
 %% setup experimental condition lists
-% so we use the term 'conditions' to refer to anything that's saved as part
-% of the experiment in a separate file. Factors to things we are going to
-% load in and use as regressors in the experimewhosnt
-factor(1).col = 2;  factor(1).labels = {'Seq', 'Onset', 'Random'}; factor(1).chance = 1/3;
-factor(2).col = 3; factor(2).labels =  {'left', 'right'}; factor(2).chance = 1/2;
-factor(3).col = NaN; factor(3).labels = {'combo'}; factor(3).chance = 1/6; % combines the other factors
-factor(4).col = NaN; factor(3).labels = {'session'}; factor(3).chance = NaN; % records session
-factor(5).col = NaN; factor(4).labels = {'run'}; factor(3).chance = NaN; % records run
+% factor(1).col = 1;  factor(1).labels = {'Seq', 'Onset', 'Random'}; factor(1).chance = 1/3;
+factor(1).col = 2; factor(1).labels =  {'left', 'right'}; factor(1).chance = 1/2;
+factor(2).col = NaN; factor(2).labels = {'combo'}; factor(2).chance = NaN; % combines the other factors
+factor(3).col = NaN; factor(3).labels = {'session'}; factor(3).chance = NaN; % records session
+factor(4).col = NaN; factor(4).labels = {'run'}; factor(4).chance = NaN; % records run
+
 for f = 1:length(factor); factor(f).classlabels = [];  end % initialize the factors to collate later
 
 %% collect all the rois
-roi_xff = mvpa.load_roi(fullfile(paths.main, paths.subject,paths.roi,{[paths.subject{1}, '_roi.voi']})); % load the rois
+roi_xff = mvpa.load_roi(fullfile(paths.main, paths.subject,paths.roi, 'MT_L-and-R_from3mm_combo.voi')); % load the rois
+
+% roi_xff = mvpa.load_roi(fullfile(paths.main, paths.subject, paths.roi, 'MT_L_from3mm.voi')); % load the rois
+
+% roi_xff = mvpa.load_roi(fullfile(paths.main, paths.subject, paths.roi, 'MT_R_from3mm.voi')); % load the rois
 
 for sess = 1:length(paths.session) % for each session
-    cond_filelist = dir(fullfile(paths.session{sess}, '*task*.mat')); % each experimental condition file
+    disp(sess)
+    %     cond_filelist = dir(fullfile(paths.session{sess}, '*2x2x2*.mat')); % each experimental condition file
+    cond_filelist = dir(fullfile(paths.session{sess}, '*3x3*.mat')); % each experimental condition file
     data_filelist = dir(fullfile(paths.session{sess}, paths.data)); % each data file
     if length(cond_filelist)~=length(data_filelist)
-        error(['number of condition files ', num2str(length(cond_filelist)), ...
+        error(['number of condition files ', num2str(length(condfilelist)), ...
             ' does not match the number of experimental files', num2str(length(data_filelist))]);
     end
+
+
+
     for run = 1:length(data_filelist) % for each vmp/glm file
 
         % deal with factors
-        conditions = mvpa.load_exp(cond_filelist(run)); % load exp protocols, nevents x nconditions
-        factor = mvpa.collate_factor_labels(factor, cell2mat(conditions.mat), sess, run);        % save the class labels [nevents x run]
+        conds = mvpa.load_exp(cond_filelist(run)); % load exp protocols
+        conds(:,1)=[1:24];
+        factor = mvpa.collate_factor_labels(factor, conds, sess, run);        % save the class labels
         % deal with data
-        data_xff = mvpa.load_data(data_filelist(run)); % load in vmp or glm.
-        % for glm, map of all voxels in brain, last dim is nvoxels
-        data_roi = mvpa.subset_data_rois(data_xff, roi_xff, dataformat);
-        % just save the data for ROIs, in a structure nevents x nvoxels
-
+        data_xff = mvpa.load_data(data_filelist(run)); % load in vmp or glm
+        data_roi = mvpa.subset_data_rois(data_xff, roi_xff, dataformat); % just save the data for ROIs, in a temp structure
         roi = mvpa.collate_roi_predictors(roi, data_roi, dataformat); % now collate the roi data, over all the runs
     end
 end
-if size(roi(1).predictors,1)~=length(factor(1).classlabels)
-    error(['the number of events in the glm files ', num2str(length(data_roi(1).id)), ...
-        ' does not match the number of events specified in the experimental files', num2str(size(conditions.mat, 1))]);
-end
+
 %% training time
 model(1).desc = {'DiscrimType', 'linear', 'OptimizeHyperparameters', 'none'};
 %  Example models, increasing in power:
