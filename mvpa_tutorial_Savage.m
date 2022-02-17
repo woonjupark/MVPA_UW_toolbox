@@ -4,25 +4,25 @@ clear all; close all;
 % Neuroelf toolbox
 % https://github.com/neuroelf/neuroelf-matlab
 
-% addpath(genpath('C:\Program Files\MATLAB\R2021b\toolbox\NeuroElf_v10_5153'))
+ione = 1;
+if ione
+    addpath(genpath('C:\Users\Ione Fine\Documents\code\neuroelf-matlab'))
+end
 
-% addpath(genpath('C:\Users\Ione Fine\Documents\code\neuroelf-matlab'))
-
-% C:\Dropbox\__Projects\_MT_sound_and_motion\[ScanData]\MTPilotTask\sub-NS_G_RQ_1982
 
 %% directories
-% paths.main = {'C:\Dropbox\__Projects\_MT_sound_and_motion\[ScanData]'};  
+% paths.main = {'C:\Dropbox\__Projects\_MT_sound_and_motion\[ScanData]'};
 
-paths.main = {'X:\TristramSavage\MT_xMod_2021\wjPilot_freesurf2BV\derivatives\brainvoyager\'};  
+paths.main = {'X:\TristramSavage\MT_xMod_2021\wjPilot_freesurf2BV\derivatives\brainvoyager\'};
 
 paths.subject = {'sub-Pilot1'};
 
 %% load ROI (aka .voi files)
-roi(1).name = {'MT_L_from3mm'}; 
-roi(2).name = {'MT_R_from3mm'}; 
+roi(1).name = {'MT_L_from3mm'};
+roi(2).name = {'MT_R_from3mm'};
 
 paths.roi = {'rois'}; % where are the roi files located inside the subject directory
-for run = 1:length(roi); roi(run).predictors = []; end % initialize the roi struct to collate later 
+for run = 1:length(roi); roi(run).predictors = []; end % initialize the roi struct to collate later
 
 %% load beta weights or glm data
 paths.session = fullfile(paths.main, paths.subject, {'ses-01', 'ses-02'});
@@ -42,7 +42,7 @@ factor(2).col = NaN; factor(2).labels = {'combo'}; factor(2).chance = NaN; % com
 factor(3).col = NaN; factor(3).labels = {'session'}; factor(3).chance = NaN; % records session
 factor(4).col = NaN; factor(4).labels = {'run'}; factor(4).chance = NaN; % records run
 
-for f = 1:length(factor); factor(f).classlabels = [];  end % initialize the factors to collate later 
+for f = 1:length(factor); factor(f).classlabels = [];  end % initialize the factors to collate later
 
 %% collect all the rois
 roi_xff = mvpa.load_roi(fullfile(paths.main, paths.subject,paths.roi, 'MT_L-and-R_from3mm_combo.voi')); % load the rois
@@ -52,15 +52,15 @@ roi_xff = mvpa.load_roi(fullfile(paths.main, paths.subject,paths.roi, 'MT_L-and-
 % roi_xff = mvpa.load_roi(fullfile(paths.main, paths.subject, paths.roi, 'MT_R_from3mm.voi')); % load the rois
 
 for sess = 1:length(paths.session) % for each session
-%     cond_filelist = dir(fullfile(paths.session{sess}, '*2x2x2*.mat')); % each experimental condition file
-    cond_filelist = dir(fullfile(paths.session{sess}, '*3x3x3*.mat')); % each experimental condition file
+    disp(sess)
+    %     cond_filelist = dir(fullfile(paths.session{sess}, '*2x2x2*.mat')); % each experimental condition file
+    cond_filelist = dir(fullfile(paths.session{sess}, '*3x3*.mat')); % each experimental condition file
     data_filelist = dir(fullfile(paths.session{sess}, paths.data)); % each data file
     if length(cond_filelist)~=length(data_filelist)
         error(['number of condition files ', num2str(length(condfilelist)), ...
             ' does not match the number of experimental files', num2str(length(data_filelist))]);
     end
 
-     
 
     for run = 1:length(data_filelist) % for each vmp/glm file
 
@@ -77,33 +77,33 @@ end
 
 %% training time
 model(1).desc = {'DiscrimType', 'linear', 'OptimizeHyperparameters', 'none'};
-    %  Example models, increasing in power:
-    % 'DiscrimType: 'linear', 'quadratic', cubic
-    % If you want to go crazy and do SVM the terminology changes a little:
-    % model(2).desc = {'SVM, OptimizeHyperparameters, 'none'};
+%  Example models, increasing in power:
+% 'DiscrimType: 'linear', 'quadratic', cubic
+% If you want to go crazy and do SVM the terminology changes a little:
+% model(2).desc = {'SVM, OptimizeHyperparameters, 'none'};
 
-    % 'OptimizeHyperparameters', 'auto' is slow, basically does something
-    % like PCA before classification
+% 'OptimizeHyperparameters', 'auto' is slow, basically does something
+% like PCA before classification
 
-model(1).class_factor = 2; % which factor are you trying to classify?
-model(1).add_pred = {1, 'session', 'run'};
-    % this adds additional predictors to the BOLD data. For example a non-classification factor, can also specify session and run as additional predictors
-    % model(1).add_pred ={}; , but you don't have to
+model(1).class_factor = 1; % which factor are you trying to classify?
+model(1).add_pred = {'session'};
+% this adds additional predictors to the BOLD data. For example a non-classification factor, can also specify session and run as additional predictors
+% model(1).add_pred ={}; , but you don't have to
 
-model(1).CVstyle = {'Kfold', 10}; 
+model(1).CVstyle = {'Kfold', 10};
 model(1).color = 'r'; model(1).sym = 's';
-    % Specifies cross validation style.
-    % Examples of sensible cross validation styles:
-    % {{'Kfold',  5}, {'Holdout', .1}, {'Leaveout', 'on'},
+% Specifies cross validation style.
+% Examples of sensible cross validation styles:
+% {{'Kfold',  5}, {'Holdout', .1}, {'Leaveout', 'on'},
 
-    % if you want to Generalize over specific factors (e.g. use one
-    % factor to select a training set, and the other to select a test set
-    % the terminology is a little different:
-    % model(1).CVstyle= {'Generalize', 1, 'Seq', 'Onset'}; 
-    % define which factor you are using to select your train/tests sets
-    % using. Then specify the labels for train and test
+% if you want to Generalize over specific factors (e.g. use one
+% factor to select a training set, and the other to select a test set
+% the terminology is a little different:
+% model(1).CVstyle= {'Generalize', 1, 'Seq', 'Onset'};
+% define which factor you are using to select your train/tests sets
+% using. Then specify the labels for train and test
 
-    model(1).Exclude = {1, 'Random'}; % list of conditions to exclude, only works for non generalize right now
+model(1).Exclude = {}; % list of conditions to exclude, only works for non generalize right now
 
 for r = 1:length(roi)
     for m = 1:length(model)
@@ -117,7 +117,7 @@ for r = 1:length(roi)
             [perf, Mdl, Mdl_CV] = mvpa.classify(model(m),  roi(r).predictors, ...
                 factor(model(m).class_factor).classlabels);
         end
-        h(m) = errorbar(r, perf.mean, perf.std, model(m).sym); 
+        h(m) = errorbar(r, perf.mean, perf.std, model(m).sym);
         set(h(m), 'MarkerEdgeColor', model(m).color,'MarkerFaceColor', model(m).color, 'Color', model(m).color); hold on
     end
 end
