@@ -10,11 +10,7 @@ if ione
 end
 
 
-%% directories
-% paths.main = {'C:\Dropbox\__Projects\_MT_sound_and_motion\[ScanData]'};
-
 paths.main = {'X:\TristramSavage\MT_xMod_2021\wjPilot_freesurf2BV\derivatives\brainvoyager\'};
-
 paths.subject = {'sub-Pilot1'};
 
 %% load ROI (aka .voi files)
@@ -36,20 +32,14 @@ paths.data = fullfile('derivatives', '*3mm*24preds01.glm'); % where the data fil
 
 
 %% setup experimental condition lists
-% factor(1).col = 1;  factor(1).labels = {'Seq', 'Onset', 'Random'}; factor(1).chance = 1/3;
 factor(1).col = 2; factor(1).labels =  {'left', 'right'}; factor(1).chance = 1/2;
-factor(2).col = NaN; factor(2).labels = {'combo'}; factor(2).chance = NaN; % combines the other factors
-factor(3).col = NaN; factor(3).labels = {'session'}; factor(3).chance = NaN; % records session
-factor(4).col = NaN; factor(4).labels = {'run'}; factor(4).chance = NaN; % records run
+factor(2).col = NaN; factor(2).labels = {'session'}; factor(2).chance = NaN; % records session
+factor(3).col = NaN; factor(3).labels = {'run'}; factor(3).chance = NaN; % records run
 
 for f = 1:length(factor); factor(f).classlabels = [];  end % initialize the factors to collate later
 
 %% collect all the rois
 roi_xff = mvpa.load_roi(fullfile(paths.main, paths.subject,paths.roi, 'MT_L-and-R_from3mm_combo.voi')); % load the rois
-
-% roi_xff = mvpa.load_roi(fullfile(paths.main, paths.subject, paths.roi, 'MT_L_from3mm.voi')); % load the rois
-
-% roi_xff = mvpa.load_roi(fullfile(paths.main, paths.subject, paths.roi, 'MT_R_from3mm.voi')); % load the rois
 
 for sess = 1:length(paths.session) % for each session
     disp(sess)
@@ -65,12 +55,12 @@ for sess = 1:length(paths.session) % for each session
     for run = 1:length(data_filelist) % for each vmp/glm file
 
         % deal with factors
-        conds = mvpa.load_exp(cond_filelist(run)); % load exp protocols
-        conds(:,1)=[1:24];
-        factor = mvpa.collate_factor_labels(factor, conds, sess, run);        % save the class labels
+        conditions = mvpa.load_exp(cond_filelist(run)); % load exp protocols
+
+        factor = mvpa.collate_factor_labels(factor, cell2mat(conditions.mat(:, 1:5)), sess, run);        % save the class labels
         % deal with data
         data_xff = mvpa.load_data(data_filelist(run)); % load in vmp or glm
-        data_roi = mvpa.subset_data_rois(data_xff, roi_xff, dataformat); % just save the data for ROIs, in a temp structure
+        data_roi = mvpa.subset_data_rois(data_xff, roi_xff, dataformat); % just save the data for ROIs, in a temp structure, nvoxels x n events/blocks
         roi = mvpa.collate_roi_predictors(roi, data_roi, dataformat); % now collate the roi data, over all the runs
     end
 end
@@ -86,7 +76,7 @@ model(1).desc = {'DiscrimType', 'linear', 'OptimizeHyperparameters', 'none'};
 % like PCA before classification
 
 model(1).class_factor = 1; % which factor are you trying to classify?
-model(1).add_pred = {'session'};
+model(1).add_pred = {'session', 'run'};
 % this adds additional predictors to the BOLD data. For example a non-classification factor, can also specify session and run as additional predictors
 % model(1).add_pred ={}; , but you don't have to
 
