@@ -1,4 +1,5 @@
-clear all; close all;
+clear all; 
+close all;
 
 %% Dependencies:
 % Neuroelf toolbox
@@ -14,8 +15,18 @@ paths.main = {'X:\TristramSavage\MT_xMod_2021\wjPilot_freesurf2BV\derivatives\br
 paths.subject = {'sub-Pilot1'};
 
 %% load ROI (aka .voi files)
+roiFileName=['MT_L-and-R_from3mm_combo.voi'];
 roi(1).name = {'MT_L_from3mm'};
 roi(2).name = {'MT_R_from3mm'};
+
+% modelName=['*2mm*24preds01.glm'];
+% condFileName=['*2x2*.mat'];
+
+modelName=['*3mm*24preds01.glm'];
+condFileName=['*3x3*.mat'];
+
+
+
 
 paths.roi = {'rois'}; % where are the roi files located inside the subject directory
 for run = 1:length(roi); roi(run).predictors = []; end % initialize the roi struct to collate later
@@ -27,8 +38,11 @@ paths.session = fullfile(paths.main, paths.subject, {'ses-01', 'ses-02'});
 % dataformat = 'vmp';
 % paths.data = fullfile('derivatives', '*3mm*24preds01.vmp'); % where the data files are located inside the subject directory
 
+
+
 dataformat = 'glm';
-paths.data = fullfile('derivatives', '*3mm*24preds01.glm'); % where the data files are located inside the subject directory
+paths.data = fullfile('derivatives', modelName); % where the data files are located inside the subject directory
+
 
 
 %% setup experimental condition lists
@@ -39,12 +53,15 @@ factor(3).col = NaN; factor(3).labels = {'run'}; factor(3).chance = NaN; % recor
 for f = 1:length(factor); factor(f).classlabels = [];  end % initialize the factors to collate later
 
 %% collect all the rois
-roi_xff = mvpa.load_roi(fullfile(paths.main, paths.subject,paths.roi, 'MT_L-and-R_from3mm_combo.voi')); % load the rois
+roi_xff = mvpa.load_roi(fullfile(paths.main, paths.subject,paths.roi, roiFileName)); % load the rois
+
+if iscell(roi_xff); roi_xff=roi_xff{1}; disp(['Coerced roi_xff from cell to xff']); end
+
 
 for sess = 1:length(paths.session) % for each session
     disp(sess)
-    %     cond_filelist = dir(fullfile(paths.session{sess}, '*2x2x2*.mat')); % each experimental condition file
-    cond_filelist = dir(fullfile(paths.session{sess}, '*3x3*.mat')); % each experimental condition file
+    %     cond_filelist = dir(fullfile(paths.session{sess}, condFileName)); % each experimental condition file
+    cond_filelist = dir(fullfile(paths.session{sess}, condFileName)); % each experimental condition file
     data_filelist = dir(fullfile(paths.session{sess}, paths.data)); % each data file
     if length(cond_filelist)~=length(data_filelist)
         error(['number of condition files ', num2str(length(condfilelist)), ...
@@ -66,7 +83,7 @@ for sess = 1:length(paths.session) % for each session
 end
 
 %% training time
-model(1).desc = {'DiscrimType', 'linear', 'OptimizeHyperparameters', 'none'};
+model(1).desc = {'DiscrimType', 'linear', 'OptimizeHyperparameters', 'auto'};
 %  Example models, increasing in power:
 % 'DiscrimType: 'linear', 'quadratic', cubic
 % If you want to go crazy and do SVM the terminology changes a little:
@@ -76,7 +93,8 @@ model(1).desc = {'DiscrimType', 'linear', 'OptimizeHyperparameters', 'none'};
 % like PCA before classification
 
 model(1).class_factor = 1; % which factor are you trying to classify?
-model(1).add_pred = {'session', 'run'};
+% model(1).add_pred = {'session'};
+model(1).add_pred = {'session','runs'};
 % this adds additional predictors to the BOLD data. For example a non-classification factor, can also specify session and run as additional predictors
 % model(1).add_pred ={}; , but you don't have to
 
@@ -95,6 +113,7 @@ model(1).color = 'r'; model(1).sym = 's';
 
 model(1).Exclude = {}; % list of conditions to exclude, only works for non generalize right now
 
+figure;
 for r = 1:length(roi)
     for m = 1:length(model)
         predictors = mvpa.generate_predictors(model(m), factor, roi(r));

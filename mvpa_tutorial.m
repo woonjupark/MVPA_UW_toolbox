@@ -8,26 +8,37 @@ addpath(genpath('C:\Users\Ione Fine\Documents\code\neuroelf-matlab'))
 
 %% directories
 
-% C:\Dropbox\__Projects\_MT_sound_and_motion\[ScanData]\WJ-Pilot1\ses-01'
-
-% paths.main = {'C:\Dropbox\__Projects\_MT_sound_and_motion\[ScanData]\WJ-Pilot1'};
-paths.main = {'C:\Dropbox\__Projects\_MT_sound_and_motion\[ScanData]\MTPilotTask'};
-
-paths.subject = {'sub-NS_G_RQ_1982'};
+paths.main = {'X:\TristramSavage\MT_xMod_2021\wjPilot_freesurf2BV\derivatives\brainvoyager\'};
+paths.subject = {'sub-Pilot1'};
 
 %% load ROI (aka .voi files)
-roi(1).name = {'rPT'}; roi(2).name = {'lMT'}; roi(3).name = {'rMT'};
+roiFileName=['MT_L-and-R_from3mm_combo.voi'];
+roi(1).name = {'MT_L_from3mm'};
+roi(2).name = {'MT_R_from3mm'};
+
+% modelName=['*2mm*24preds01.glm'];
+% condFileName=['*2x2*.mat'];
+
+modelName=['*3mm*24preds01.glm'];
+condFileName=['*3x3*.mat'];
+
+
+
+
 paths.roi = {'rois'}; % where are the roi files located inside the subject directory
 for run = 1:length(roi); roi(run).predictors = []; end % initialize the roi struct to collate later
 
 %% load beta weights or glm data
-paths.session = fullfile(paths.main, paths.subject, {'ses-02', 'ses-03'});
+paths.session = fullfile(paths.main, paths.subject, {'ses-01', 'ses-02'});
 
 %% define if using vmp or glm BOLD data
 % dataformat = 'vmp';
-% paths.data = fullfile('derivatives', '*_GLM_trials.vmp');
+% paths.data = fullfile('derivatives', '*3mm*24preds01.vmp'); % where the data files are located inside the subject directory
+
+
+
 dataformat = 'glm';
-paths.data = fullfile('derivatives', '*ver2*.glm'); % where the data files are located inside the subject directory
+paths.data = fullfile('derivatives', modelName); % where the data files are located inside the subject directory
 
 %% setup experimental condition lists
 % so we use the term 'conditions' to refer to anything that's saved as part
@@ -41,10 +52,12 @@ factor(5).col = NaN; factor(4).labels = {'run'}; factor(3).chance = NaN; % recor
 for f = 1:length(factor); factor(f).classlabels = [];  end % initialize the factors to collate later
 
 %% collect all the rois
-roi_xff = mvpa.load_roi(fullfile(paths.main, paths.subject,paths.roi,{[paths.subject{1}, '_roi.voi']})); % load the rois
+roi_xff = mvpa.load_roi(fullfile(paths.main, paths.subject,paths.roi, roiFileName)); % load the rois
+
+if iscell(roi_xff); roi_xff=roi_xff{1}; disp(['Coerced roi_xff from cell to xff']); end
 
 for sess = 1:length(paths.session) % for each session
-    cond_filelist = dir(fullfile(paths.session{sess}, '*task*.mat')); % each experimental condition file
+    cond_filelist = dir(fullfile(paths.session{sess}, condFileName)); % each experimental condition file
     data_filelist = dir(fullfile(paths.session{sess}, paths.data)); % each data file
     if length(cond_filelist)~=length(data_filelist)
         error(['number of condition files ', num2str(length(cond_filelist)), ...
