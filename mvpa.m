@@ -39,19 +39,18 @@ classdef mvpa
                 end
             end
         end
-<<<<<<< HEAD
         function factor = collate_factor_labels(factor, conds, session, run)
             % collate factors across sessions and runs
-            
+
             if length(factor)>3 % if we have more than one factor, there's a combination factor
-                nf = 3; 
+                nf = 3;
             else % if only one explicitly defined factor, we just have 3 factors, the factor, session and run
                 nf = 2;
             end
             for f = 1:(length(factor)-nf)
                 factor(f).classlabels = cat(1, factor(f).classlabels, factor(f).labels(conds(:,factor(f).col))');
             end
-            if length(factor)>3 
+            if length(factor)>3
                 % collates the factor that is a combination of all other
                 % factors
                 for c = 1:size(conds,1)
@@ -59,38 +58,12 @@ classdef mvpa
                     for f = 1:(length(factor)-3)
                         str{c} = strcat(tmp, factor(f).classlabels{c});
                     end
-=======
-        function factor = collate_factor_labels(factor, emat, session, run)
-            % lowercase labels
-            for f = 1:length(factor)
-                factor(f).labels = lower(factor(f).labels);
-            end
-            % collate factors across sessions and runs
-            for f = 1:length(factor)
-                if ~isnan(factor(f).col)
-                    factor(f).classlabels = lower(cat(1, factor(f).classlabels, factor(f).labels(emat(:,factor(f).col))'));
-                elseif strcmp(factor(f).labels, 'combo')
-                    for c = 1:size(emat,1)
-                        tmp = factor(1).classlabels{c};
-                        for f2 = 1:(f-1)
-                            str{c} = lower(strcat(tmp, factor(f2).classlabels{c}));
-                        end
-                    end
-                    factor(f).classlabels = cat(2, factor(f).classlabels, str);
-                elseif strcmp(factor(f).labels, 'session')
-                    factor(f).classlabels = cat(1, factor(f).classlabels, session.*ones(size(emat,1), 1));
-                elseif strcmp(factor(f).labels, 'run')
-                    factor(f).classlabels = cat(1, factor(f).classlabels, run.*ones(size(emat,1), 1));
->>>>>>> developClassify
                 end
                 factor(end-2).classlabels = cat(2, factor(end-2).classlabels, str);
             end
-<<<<<<< HEAD
             % make session and run factors
             factor(end-1).classlabels = cat(1, factor(end-1).classlabels, session.*ones(size(conds,1), 1));
             factor(end).classlabels = cat(1, factor(end).classlabels, run.*ones(size(conds,1), 1));
-=======
->>>>>>> developClassify
         end
 
         % subsetting
@@ -102,7 +75,7 @@ classdef mvpa
                 data_roi = mvpa.GLMinVOI(data_xff, roi_xff);% get the beta weights by roi
             end
         end
-        
+
         function [predictors] = generate_predictors(model, factor, roi)
             % so decide what besides the voxel values will be predictors
             predictors = num2cell(roi.predictors);
@@ -125,7 +98,7 @@ classdef mvpa
             end
             predictors = predictors(find(idx), :);
         end
-        % from anatomies to voi 
+        % from anatomies to voi
         function [b] = VMPinVOI(vmp, voi, voiNum)
             % [b] = GLMinVOI(vmp, voi ,voiNum)
             %
@@ -332,12 +305,12 @@ classdef mvpa
         end
 
         function [perf, Mdl, Mdl_CV] = classify(model,predictors,classlabels, genlabels)
-            
+
             if ~sum(strcmp(model.CVstyle, 'Generalize'))
                 train_idx = 1:length(classlabels);
                 test_idx = train_idx;
             else
-                train_idx = strcmpi(genlabels, model.CVstyle{3}); 
+                train_idx = strcmpi(genlabels, model.CVstyle{3});
                 test_idx = strcmpi(genlabels, model.CVstyle{4});
             end
             if strcmp(model.desc{1}, 'DiscrimType')
@@ -357,22 +330,22 @@ classdef mvpa
                 perf.std = 0;
             end
         end
-<<<<<<< HEAD
 
-
- 
-
-=======
-        
         % separate things out (for flexibility)
-        
+
         % select cv sets while allowing for cross-condition decoding
         function [cv, doi, doiPredictors] = select_train_test(model, factor, predictors)
-            
+
             % housekeeping
             trainConds = lower(model.trainConds);
             testConds = lower(model.testConds);
             
+            % if not already, lowercase labels, just to make it easier
+            for f = 1:length(factor)
+                factor(f).labels = lower(factor(f).labels);
+                factor(f).classlabels = lower(factor(f).classlabels);
+            end
+
             % find factor of interest
             if ~isempty(trainConds)
                 for f = 1:length(factor)
@@ -405,32 +378,32 @@ classdef mvpa
             if trainFactor ~= testFactor
                 error('error: Can only generalize across conditions within a factor for now');
             end
-            
-            % extract data of interest 
-            loi = unique([trainConds testConds]); 
+
+            % extract data of interest
+            loi = unique([trainConds testConds]);
             for l = 1:length(loi)
-                tempidx(:,l) = strcmp(factor(trainFactor).classlabels, loi(l)); 
+                tempidx(:,l) = strcmpi(factor(trainFactor).classlabels, loi(l));
             end
             idx = logical(sum(tempidx,2));
-            doiPredictors = predictors(idx,:); 
+            doiPredictors = predictors(idx,:);
             doi = factor;
             for f = 1:length(factor)
                 doi(f).doilabels = factor(f).classlabels(idx);
             end
-            
+
             % figure out number of runs (combination of runs and sessions)
             sessrun = unique([factor(end-1).classlabels factor(end).classlabels], 'rows');
             nruns = size(sessrun,1);
-            
+
             % select train and test data
-            if ~strcmp(model.CVstyle{1}, 'Generalize') && ~strcmp(model.CVstyle{1}, 'LeaveOneRunOut') 
+            if ~strcmp(model.CVstyle{1}, 'Generalize') && ~strcmp(model.CVstyle{1}, 'LeaveOneRunOut')
                 disp('Using default function to partition');
                 if length(testConds) ~= length(trainConds) || ~all(strcmp(sort(testConds),sort(trainConds)))
                     error('error: model.CVstyle; Default parittion not possible. Use LeaveOneOut');
                 end
                 % partition using default matlab function (e.g. kfold, holdout, ...)
                 cv = cvpartition(doi(model.class_factor).doilabels, model.CVstyle{:});
-            else % 
+            else %
                 disp('Leave one run out');
                 cv.NumObservations = length(doi(1).doilabels);
                 cv.NumTestSets = nruns;
@@ -441,7 +414,7 @@ classdef mvpa
             end
 
         end
-        
+
         % Leave-One-Run-Out test
         function test_idx = LeaveOneRunOut_test(run,doi,sessrun,testConds,testFactor)
             % test idx
@@ -449,9 +422,9 @@ classdef mvpa
                 tempidx(:,ci) = (doi(end-1).doilabels == sessrun(run,1)) & (doi(end).doilabels == sessrun(run,2)) & ...
                     strcmp(doi(testFactor).doilabels,testConds{ci});
             end
-            test_idx = logical(sum(tempidx,2)); 
+            test_idx = logical(sum(tempidx,2));
         end
-        
+
         % Leave-One-Run-Out train
         function train_idx = LeaveOneRunOut_train(run,doi,sessrun,trainConds,trainFactor)
             temp = [doi(end-1).doilabels doi(end).doilabels];
@@ -463,7 +436,7 @@ classdef mvpa
             end
             train_idx = logical(sum(tempidx,2));
         end
-        
+
         % train
         function [Mdl] = train(model, predictors, labels)
 
@@ -472,32 +445,30 @@ classdef mvpa
             elseif strcmp(model.desc{1},'SVM')
                 Mdl = fitcecoc(predictors, labels, model.desc{:});
             end
-            
+
         end
-        
+
         % test
         function predlabels = test(Mdl, testpredictors)
-            
+
             predlabels = Mdl.predict(testpredictors);
 %             predlabels = predict(Mdl, testpredictors);
-            
+
         end
-        
+
         % output
         function perf = output(testlabels, predlabels)
-            
+
             perf.testlabels = testlabels;
             perf.predlabels = predlabels;
-            
+
             temp = strcmp(testlabels, predlabels);
-            
+
             perf.mean = mean(temp);
             perf.std = std(temp);
             perf.sem = perf.std/sqrt(length(testlabels));
-        
+
         end
-        
->>>>>>> developClassify
+
     end
 end
-
