@@ -38,23 +38,28 @@ classdef mvpa
             end
         end
         function factor = collate_factor_labels(factor, emat, session, run)
-            % collate factors across sessions and runs
-
-            for f = 1:(length(factor)-3)
-                factor(f).classlabels = cat(1, factor(f).classlabels, factor(f).labels(emat(:,factor(f).col))');
+            % lowercase labels
+            for f = 1:length(factor)
+                factor(f).labels = lower(factor(f).labels);
             end
-            % collates the factor that is a combination of all other
-            % factors
-            for c = 1:size(emat,1)
-                tmp = factor(1).classlabels{c};
-                for f = 1:(length(factor)-3)
-                    str{c} = strcat(tmp, factor(f).classlabels{c});
+            % collate factors across sessions and runs
+            for f = 1:length(factor)
+                if ~isnan(factor(f).col)
+                    factor(f).classlabels = lower(cat(1, factor(f).classlabels, factor(f).labels(emat(:,factor(f).col))'));
+                elseif strcmp(factor(f).labels, 'combo')
+                    for c = 1:size(emat,1)
+                        tmp = factor(1).classlabels{c};
+                        for f2 = 1:(f-1)
+                            str{c} = lower(strcat(tmp, factor(f2).classlabels{c}));
+                        end
+                    end
+                    factor(f).classlabels = cat(2, factor(f).classlabels, str);
+                elseif strcmp(factor(f).labels, 'session')
+                    factor(f).classlabels = cat(1, factor(f).classlabels, session.*ones(size(emat,1), 1));
+                elseif strcmp(factor(f).labels, 'run')
+                    factor(f).classlabels = cat(1, factor(f).classlabels, run.*ones(size(emat,1), 1));
                 end
             end
-            factor(end-2).classlabels = cat(2, factor(end-2).classlabels, str);
-            % make session and run factors
-            factor(end-1).classlabels = cat(1, factor(end-1).classlabels, session.*ones(size(emat,1), 1));
-            factor(end).classlabels = cat(1, factor(end).classlabels, run.*ones(size(emat,1), 1));
         end
 
         % subsetting
@@ -74,9 +79,9 @@ classdef mvpa
                 if isa(model.add_pred{p}, 'double')
                     predictors = cat(2, predictors, factor(model.add_pred{p}).classlabels);
                 elseif strcmp(model.add_pred{p}, 'session')
-                    predictors = cat(2, predictors, num2cell(factor(end-1).classlabels));
+                    predictors = cat(2, predictors, num2cell(single(factor(end-1).classlabels)));
                 elseif strcmp(model.add_pred{p}, 'run')
-                    predictors = cat(2, predictors, num2cell(factor(end).classlabels));
+                    predictors = cat(2, predictors, num2cell(single(factor(end).classlabels)));
                 end
             end
         end
@@ -89,7 +94,7 @@ classdef mvpa
             end
             predictors = predictors(find(idx), :);
         end
-            % from anatomies to voi 
+        % from anatomies to voi 
         function [b] = VMPinVOI(vmp, voi, voiNum)
             % [b] = GLMinVOI(vmp, voi ,voiNum)
             %
@@ -295,14 +300,14 @@ classdef mvpa
             end
         end
 
-
         function [perf, Mdl, Mdl_CV] = classify(model,predictors,classlabels, genlabels)
+            
             if ~sum(strcmp(model.CVstyle, 'Generalize'))
                 train_idx = 1:length(classlabels);
                 test_idx = train_idx;
             else
-                train_idx = strcmp(genlabels, model.CVstyle{3});
-                test_idx = strcmp(genlabels, model.CVstyle{4});
+                train_idx = strcmpi(genlabels, model.CVstyle{3}); 
+                test_idx = strcmpi(genlabels, model.CVstyle{4});
             end
             if strcmp(model.desc{1}, 'DiscrimType')
                 Mdl = fitcdiscr(predictors(train_idx, :), classlabels(train_idx), model.desc{:});
@@ -321,6 +326,140 @@ classdef mvpa
                 perf.std = 0;
             end
         end
+        
+        % separate things out (for flexibility)
+        
+        % select cv sets while allowing for cross-condition decoding
+        function [cv, doi, doiPredictors] = select_train_test(model, factor, predictors)
+            
+            % housekeeping
+            trainConds = lower(model.trainConds);
+            testConds = lower(model.testConds);
+            
+            % find factor of interest
+            if ~isempty(trainConds)
+                for f = 1:length(factor)
+                    for tc = 1:length(trainConds)
+                        temp = strfind(factor(f).labels, trainConds(tc));
+                        trainTemp(f,tc) = sum([temp{:}]);
+                    end
+                end
+                [trainr,~] = find(trainTemp==1);
+                if length(unique(trainr)) > 1
+                    error('error: trainConds; can only do within a factor for now');
+                else
+                    [trainFactor, ~] = find(trainTemp(:,1)==1);
+                end
+            end
+            if ~isempty(testConds)
+                for f = 1:length(factor)
+                    for tc = 1:length(testConds)
+                        temp = strfind(factor(f).labels, testConds(tc));
+                        testTemp(f,tc) = sum([temp{:}]);
+                    end
+                end
+                [testr,~] = find(testTemp==1);
+                if length(unique(testr)) > 1
+                    error('error: testConds; can only do within a factor for now');
+                else
+                    [testFactor, ~] = find(testTemp(:,1)==1);
+                end
+            end
+            if trainFactor ~= testFactor
+                error('error: Can only generalize across conditions within a factor for now');
+            end
+            
+            % extract data of interest 
+            loi = unique([trainConds testConds]); 
+            for l = 1:length(loi)
+                tempidx(:,l) = strcmp(factor(trainFactor).classlabels, loi(l)); 
+            end
+            idx = logical(sum(tempidx,2));
+            doiPredictors = predictors(idx,:); 
+            doi = factor;
+            for f = 1:length(factor)
+                doi(f).doilabels = factor(f).classlabels(idx);
+            end
+            
+            % figure out number of runs (combination of runs and sessions)
+            sessrun = unique([factor(end-1).classlabels factor(end).classlabels], 'rows');
+            nruns = size(sessrun,1);
+            
+            % select train and test data
+            if ~strcmp(model.CVstyle{1}, 'Generalize') && ~strcmp(model.CVstyle{1}, 'LeaveOneRunOut') 
+                disp('Using default function to partition');
+                if length(testConds) ~= length(trainConds) || ~all(strcmp(sort(testConds),sort(trainConds)))
+                    error('error: model.CVstyle; Default parittion not possible. Use LeaveOneOut');
+                end
+                % partition using default matlab function (e.g. kfold, holdout, ...)
+                cv = cvpartition(doi(model.class_factor).doilabels, model.CVstyle{:});
+            else % 
+                disp('Leave one run out');
+                cv.NumObservations = length(doi(1).doilabels);
+                cv.NumTestSets = nruns;
+                cv.test = @(x) mvpa.LeaveOneRunOut_test(x,doi,sessrun,testConds,testFactor);
+                cv.training = @(x) mvpa.LeaveOneRunOut_train(x,doi,sessrun,trainConds,trainFactor);
+                cv.TestSize = arrayfun(@(x) sum(cv.test(x)), 1:nruns);
+                cv.TrainSize = arrayfun(@(x) sum(cv.training(x)), 1:nruns);
+            end
+
+        end
+        
+        % Leave-One-Run-Out test
+        function test_idx = LeaveOneRunOut_test(run,doi,sessrun,testConds,testFactor)
+            % test idx
+            for ci = 1:length(testConds)
+                tempidx(:,ci) = (doi(end-1).doilabels == sessrun(run,1)) & (doi(end).doilabels == sessrun(run,2)) & ...
+                    strcmp(doi(testFactor).doilabels,testConds{ci});
+            end
+            test_idx = logical(sum(tempidx,2)); 
+        end
+        
+        % Leave-One-Run-Out train
+        function train_idx = LeaveOneRunOut_train(run,doi,sessrun,trainConds,trainFactor)
+            temp = [doi(end-1).doilabels doi(end).doilabels];
+            whichruns_temp = (temp~=[sessrun(run,1) sessrun(run,2)]);
+            whichruns = or(whichruns_temp(:,1), whichruns_temp(:,2));
+            % training idx
+            for ci = 1:length(trainConds)
+                tempidx(:,ci) = whichruns & strcmp(doi(trainFactor).doilabels,trainConds{ci});
+            end
+            train_idx = logical(sum(tempidx,2));
+        end
+        
+        % train
+        function [Mdl] = train(model, predictors, labels)
+
+            if strcmp(model.desc{1}, 'DiscrimType')
+                Mdl = fitcdiscr(predictors, labels, model.desc{:});
+            elseif strcmp(model.desc{1},'SVM')
+                Mdl = fitcecoc(predictors, labels, model.desc{:});
+            end
+            
+        end
+        
+        % test
+        function predlabels = test(Mdl, testpredictors)
+            
+            predlabels = Mdl.predict(testpredictors);
+%             predlabels = predict(Mdl, testpredictors);
+            
+        end
+        
+        % output
+        function perf = output(testlabels, predlabels)
+            
+            perf.testlabels = testlabels;
+            perf.predlabels = predlabels;
+            
+            temp = strcmp(testlabels, predlabels);
+            
+            perf.mean = mean(temp);
+            perf.std = std(temp);
+            perf.sem = perf.std/sqrt(length(testlabels));
+        
+        end
+        
     end
 end
 
