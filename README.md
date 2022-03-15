@@ -1,7 +1,7 @@
 MVPA_UW_toolbox 
 
 - forked from @VisCog, created by K Chang, WJ Park, T Savage, and I Fine. 
-- functions for region-of-interest based MVPA analyses using Brainvoyager data
+- functions for region-of-interest MVPA analyses using data generated in Brainvoyager
 
 Dependencies:
 
