@@ -28,14 +28,18 @@ classdef mvpa
             disp(['YOU HAVE ', num2str(size(conditions.mat, 1)), ' EVENTS IN A RUN, CORRECT?']);
         end
         % collate functions
-        function [roi, sess_run] = collate_roi_predictors(roi, data_roi, dataformat, s, i)
+        function [roi] = collate_roi_predictors(roi, data_roi, dataformat, idx)
             % collate voxel values across sessions and runs
             for r = 1:length(roi)
                 roiIndx = strcmp({data_roi.name}, roi(r).name); % subset by the ROI
                 if strcmp(dataformat, 'vmp')
-                    roi(r).predictors = [roi(r).predictors; data_roi(roiIndx).beta'];  % block
+                    roi(r).predictors = [roi(r).predictors; data_roi(roiIndx).beta(:,idx)'];  % block
                 elseif strcmp(dataformat, 'glm')
-                    roi(r).predictors = [roi(r).predictors; data_roi(roiIndx).beta(:,1:end-1)']; % block x timept
+                    tempbeta = data_roi(roiIndx).beta(:,1:end-1);
+                    if exist('idx','var')    
+                        tempbeta = tempbeta(:,idx);
+                    end
+                    roi(r).predictors = [roi(r).predictors; tempbeta']; % block x timept
                 end
             end
         end
